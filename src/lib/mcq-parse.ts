@@ -23,11 +23,15 @@ export type ParsedMcq = {
   explanation: string;
   /** Optional difficulty parsed from a `Difficulty:` line. Undefined when absent. */
   difficulty?: "easy" | "medium" | "hard";
+  /** 1-based block position in the source text — assigned by parseMcqText. */
+  sourceIndex?: number;
 };
+
+export type ParsedMcqInvalidBlock = { raw: string; reason: string; sourceIndex: number };
 
 export type ParsedMcqResult = {
   cards: ParsedMcq[];
-  invalidBlocks: { raw: string; reason: string }[];
+  invalidBlocks: ParsedMcqInvalidBlock[];
 };
 
 const norm = (s: string) => s.replace(/\s+/g, " ").trim();
@@ -400,12 +404,17 @@ function parseBlock(raw: string): { mcq: ParsedMcq | null; reason?: string } {
 export function parseMcqText(input: string): ParsedMcqResult {
   const blocks = splitBlocks(input ?? "");
   const cards: ParsedMcq[] = [];
-  const invalidBlocks: { raw: string; reason: string }[] = [];
-  for (const b of blocks) {
+  const invalidBlocks: ParsedMcqInvalidBlock[] = [];
+  blocks.forEach((b, idx) => {
+    const sourceIndex = idx + 1;
     const { mcq, reason } = parseBlock(b);
-    if (mcq) cards.push(mcq);
-    else invalidBlocks.push({ raw: b, reason: reason ?? "Unparseable" });
-  }
+    if (mcq) {
+      mcq.sourceIndex = sourceIndex;
+      cards.push(mcq);
+    } else {
+      invalidBlocks.push({ raw: b, reason: reason ?? "Unparseable", sourceIndex });
+    }
+  });
   return { cards, invalidBlocks };
 }
 

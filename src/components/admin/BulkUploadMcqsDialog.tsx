@@ -103,8 +103,13 @@ export function BulkUploadMcqsDialog({
   const [rawText, setRawText] = useState("");
   const [parsing, setParsing] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
-  const [errors, setErrors] = useState<{ raw: string; reason: string }[]>([]);
+  const [errors, setErrors] = useState<{ raw: string; reason: string; sourceIndex: number }[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [summary, setSummary] = useState<{
+    total: number;
+    success: number;
+    failed: Array<{ sourceIndex: number; reason: string }>;
+  } | null>(null);
 
   const levelsQ = useQuery({
     queryKey: ["admin-levels"],
@@ -160,6 +165,7 @@ export function BulkUploadMcqsDialog({
     const { cards, invalidBlocks } = parseMcqText(text);
     setRows(cards.map((c) => ({ ...c })));
     setErrors(invalidBlocks);
+    setSummary(null);
     if (cards.length === 0) toast.error("No MCQs detected. Check the format.");
     else toast.success(`Parsed ${cards.length} MCQ${cards.length > 1 ? "s" : ""}`);
   };
@@ -217,12 +223,29 @@ export function BulkUploadMcqsDialog({
       return done;
     },
     onSuccess: (n) => {
-      toast.success(`Imported ${n} MCQs into the chapter`);
+      const failed: Array<{ sourceIndex: number; reason: string }> = [
+        ...errors.map((e) => ({
+          sourceIndex: e.sourceIndex,
+          reason: e.reason || "Invalid question",
+        })),
+        ...rows
+          .filter((r) => r._dupe)
+          .map((r) => ({
+            sourceIndex: r.sourceIndex ?? 0,
+            reason: "Duplicate question",
+          })),
+      ].sort((a, b) => a.sourceIndex - b.sourceIndex);
+      const total = n + failed.length;
+      setSummary({ total, success: n, failed });
+      toast.success(`Imported ${n} MCQs · ${failed.length} skipped`);
       qc.invalidateQueries({ queryKey: ["admin-mcqs"] });
       qc.invalidateQueries({ queryKey: ["quiz-mcq-pool"] });
       qc.invalidateQueries({ queryKey: ["bulk-existing-mcqs"] });
       onImported();
-      onClose();
+      // Keep the dialog open so admins can read the import report. They close it manually.
+      if (!failed.length) {
+        setTimeout(onClose, 800);
+      }
     },
     onError: (e: Error) => {
       toast.error(e.message);
@@ -461,7 +484,10 @@ export function BulkUploadMcqsDialog({
             <div className="mt-2 space-y-2">
               {errors.slice(0, 10).map((e, i) => (
                 <div key={i} className="rounded bg-background/40 p-2">
-                  <p className="text-rose-300">{e.reason}</p>
+                  <p className="text-rose-300">
+                    <span className="font-semibold">Original Serial #{e.sourceIndex}</span> ·{" "}
+                    {e.reason}
+                  </p>
                   <pre className="mt-1 whitespace-pre-wrap text-[10px] text-muted-foreground">
                     {e.raw.slice(0, 240)}
                   </pre>
@@ -485,6 +511,44 @@ export function BulkUploadMcqsDialog({
                 style={{ width: `${(progress.done / Math.max(1, progress.total)) * 100}%` }}
               />
             </div>
+          </div>
+        )}
+
+        {summary && (
+          <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs">
+            <div className="mb-2 font-semibold text-emerald-300">Import Summary</div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded bg-background/40 p-2">
+                <div className="text-[10px] uppercase text-muted-foreground">Total Questions</div>
+                <div className="text-base font-bold">{summary.total}</div>
+              </div>
+              <div className="rounded bg-background/40 p-2">
+                <div className="text-[10px] uppercase text-muted-foreground">Imported</div>
+                <div className="text-base font-bold text-emerald-300">{summary.success}</div>
+              </div>
+              <div className="rounded bg-background/40 p-2">
+                <div className="text-[10px] uppercase text-muted-foreground">Failed</div>
+                <div className="text-base font-bold text-rose-300">{summary.failed.length}</div>
+              </div>
+            </div>
+            {summary.failed.length > 0 && (
+              <div className="mt-3">
+                <div className="mb-1 font-semibold text-rose-300">Failed Questions</div>
+                <div className="space-y-1">
+                  {summary.failed.map((f, i) => (
+                    <div
+                      key={`${f.sourceIndex}-${i}`}
+                      className="flex items-start gap-2 rounded bg-background/40 px-2 py-1"
+                    >
+                      <span className="font-mono text-muted-foreground">
+                        #{f.sourceIndex || "?"}
+                      </span>
+                      <span className="text-rose-300">{f.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
         </div>

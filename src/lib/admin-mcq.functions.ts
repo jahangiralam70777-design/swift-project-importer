@@ -484,10 +484,14 @@ export const adminListMcqs = createServerFn({ method: "POST" })
     let q = context.supabase
       .from("mcqs")
       .select(
-        "id,question,option_a,option_b,option_c,option_d,correct_option,explanation,difficulty,status,tags,chapter_id,updated_at",
+        "id,question,option_a,option_b,option_c,option_d,correct_option,explanation,difficulty,status,tags,chapter_id,updated_at,created_at,sort_order",
         { count: "exact" },
       )
-      .order("updated_at", { ascending: false })
+      // Preserve bulk-import source order. NULL sort_order rows (legacy) fall
+      // back to created_at so historical data keeps its previous sequence.
+      .order("sort_order", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
       .range(from, to);
 
     if (data.chapterId) q = q.eq("chapter_id", data.chapterId);
@@ -788,11 +792,24 @@ export const adminBulkImportMcqs = createServerFn({ method: "POST" })
       rateLimitKey("admin:bulk_upload", "user", context.userId),
       RATE_LIMITS.BULK_UPLOAD,
     );
-    const rows = data.items.map((it) => ({
+    // Continue sort_order from the chapter's current max so multiple bulk
+    // imports stack in chronological order without ever reshuffling earlier
+    // rows. Within this batch, items keep the exact order received from the
+    // parser/dialog (which is the original source order).
+    const { data: maxRow } = await context.supabase
+      .from("mcqs")
+      .select("sort_order")
+      .eq("chapter_id", data.chapter_id)
+      .order("sort_order", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+    const base = Number((maxRow as { sort_order: number | null } | null)?.sort_order ?? 0);
+    const rows = data.items.map((it, i) => ({
       ...it,
       chapter_id: data.chapter_id,
       difficulty: it.difficulty ?? data.defaults?.difficulty ?? "medium",
       status: it.status ?? data.defaults?.status ?? "published",
+      sort_order: base + i + 1,
       created_by: context.userId,
     }));
     const { error, count } = await context.supabase.from("mcqs").insert(rows, { count: "exact" });

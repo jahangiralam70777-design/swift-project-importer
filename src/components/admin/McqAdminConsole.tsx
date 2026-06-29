@@ -138,7 +138,12 @@ type BulkImportItem = {
   tags: string[];
 };
 
-type ParsedImportRow = BulkImportItem & { source: string; duplicate?: boolean; error?: string };
+type ParsedImportRow = BulkImportItem & {
+  source: string;
+  sourceIndex?: number;
+  duplicate?: boolean;
+  error?: string;
+};
 
 function emptyDraft(chapterId: string): Draft {
   return {
@@ -1742,12 +1747,24 @@ function BulkImportDialog({
     setMsg(null);
     try {
       const items: BulkImportItem[] = validRows.map(
-        ({ source: _s, duplicate: _d, error: _e, ...item }) => item,
+        ({ source: _s, sourceIndex: _si, duplicate: _d, error: _e, ...item }) => item,
       );
       const res = await run({ data: { chapter_id: chapterId, items } });
-      setMsg({ kind: "ok", text: `Inserted ${res.inserted} MCQs` });
-      toast.success(`Imported ${res.inserted} MCQs`);
-      setTimeout(onDone, 600);
+      const failed = rows.filter((r) => r.error || r.duplicate);
+      const failedReport = failed
+        .map(
+          (r) =>
+            `#${r.sourceIndex ?? "?"} — ${r.error ?? (r.duplicate ? "Duplicate question" : "Failed")}`,
+        )
+        .join("\n");
+      const summary =
+        `Total Questions: ${rows.length}\n` +
+        `Imported Successfully: ${res.inserted}\n` +
+        `Failed: ${failed.length}` +
+        (failed.length ? `\n\nFailed Questions:\n${failedReport}` : "");
+      setMsg({ kind: "ok", text: summary });
+      toast.success(`Imported ${res.inserted} MCQs · ${failed.length} skipped`);
+      if (!failed.length) setTimeout(onDone, 600);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Import failed";
       setMsg({ kind: "err", text: message });
@@ -1852,9 +1869,11 @@ function BulkImportDialog({
       )}
 
       {msg && (
-        <p className={`mt-3 text-xs ${msg.kind === "ok" ? "text-emerald-400" : "text-red-400"}`}>
+        <pre
+          className={`mt-3 whitespace-pre-wrap break-words rounded-lg border border-border/40 bg-background/40 p-3 text-xs ${msg.kind === "ok" ? "text-emerald-300" : "text-red-300"}`}
+        >
           {msg.text}
-        </p>
+        </pre>
       )}
       <div className="mt-4 flex justify-end gap-2">
         <button
@@ -1910,6 +1929,7 @@ function parseMcqText(raw: string, source: string): ParsedImportRow[] {
   return [
     ...parsed.cards.map((row) => ({
       source,
+      sourceIndex: row.sourceIndex,
       question: row.question,
       question_type: row.question_type,
       option_a: row.option_a,
@@ -1918,12 +1938,15 @@ function parseMcqText(raw: string, source: string): ParsedImportRow[] {
       option_d: row.question_type === "true_false" ? null : row.option_d,
       correct_option: row.correct_option,
       explanation: row.explanation || null,
-      difficulty: "medium" as const,
+      // Honor the parser's optional Difficulty. Fall back to the existing
+      // default only when none was supplied — never override an explicit value.
+      difficulty: (row.difficulty ?? "medium") as "easy" | "medium" | "hard",
       status: "published" as const,
       tags: [],
     })),
     ...parsed.invalidBlocks.map((block) => ({
       source,
+      sourceIndex: block.sourceIndex,
       question: block.raw,
       question_type: "mcq" as const,
       option_a: "",
