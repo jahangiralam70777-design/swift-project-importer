@@ -89,7 +89,9 @@ function parseDifficulty(raw: string | undefined): "easy" | "medium" | "hard" | 
   if (!t) return undefined;
   if (t.startsWith("normal") || t.startsWith("easy")) return "easy";
   if (t.startsWith("medium")) return "medium";
-  if (t.startsWith("hard")) return "hard";
+  // "Hard", "Difficult", "Tough" all map to the existing "hard" enum value.
+  // We never create a new "difficult" enum — it is normalized here.
+  if (t.startsWith("hard") || t.startsWith("difficult") || t.startsWith("tough")) return "hard";
   return undefined;
 }
 
