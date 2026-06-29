@@ -138,7 +138,12 @@ type BulkImportItem = {
   tags: string[];
 };
 
-type ParsedImportRow = BulkImportItem & { source: string; duplicate?: boolean; error?: string };
+type ParsedImportRow = BulkImportItem & {
+  source: string;
+  sourceIndex?: number;
+  duplicate?: boolean;
+  error?: string;
+};
 
 function emptyDraft(chapterId: string): Draft {
   return {
