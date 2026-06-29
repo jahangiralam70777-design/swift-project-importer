@@ -484,10 +484,14 @@ export const adminListMcqs = createServerFn({ method: "POST" })
     let q = context.supabase
       .from("mcqs")
       .select(
-        "id,question,option_a,option_b,option_c,option_d,correct_option,explanation,difficulty,status,tags,chapter_id,updated_at",
+        "id,question,option_a,option_b,option_c,option_d,correct_option,explanation,difficulty,status,tags,chapter_id,updated_at,created_at,sort_order",
         { count: "exact" },
       )
-      .order("updated_at", { ascending: false })
+      // Preserve bulk-import source order. NULL sort_order rows (legacy) fall
+      // back to created_at so historical data keeps its previous sequence.
+      .order("sort_order", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
       .range(from, to);
 
     if (data.chapterId) q = q.eq("chapter_id", data.chapterId);
