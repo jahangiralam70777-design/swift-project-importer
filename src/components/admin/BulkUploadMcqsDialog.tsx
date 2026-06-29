@@ -222,12 +222,29 @@ export function BulkUploadMcqsDialog({
       return done;
     },
     onSuccess: (n) => {
-      toast.success(`Imported ${n} MCQs into the chapter`);
+      const failed: Array<{ sourceIndex: number; reason: string }> = [
+        ...errors.map((e) => ({
+          sourceIndex: e.sourceIndex,
+          reason: e.reason || "Invalid question",
+        })),
+        ...rows
+          .filter((r) => r._dupe)
+          .map((r) => ({
+            sourceIndex: r.sourceIndex ?? 0,
+            reason: "Duplicate question",
+          })),
+      ].sort((a, b) => a.sourceIndex - b.sourceIndex);
+      const total = n + failed.length;
+      setSummary({ total, success: n, failed });
+      toast.success(`Imported ${n} MCQs · ${failed.length} skipped`);
       qc.invalidateQueries({ queryKey: ["admin-mcqs"] });
       qc.invalidateQueries({ queryKey: ["quiz-mcq-pool"] });
       qc.invalidateQueries({ queryKey: ["bulk-existing-mcqs"] });
       onImported();
-      onClose();
+      // Keep the dialog open so admins can read the import report. They close it manually.
+      if (!failed.length) {
+        setTimeout(onClose, 800);
+      }
     },
     onError: (e: Error) => {
       toast.error(e.message);
