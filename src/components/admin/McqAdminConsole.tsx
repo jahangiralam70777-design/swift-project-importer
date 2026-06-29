@@ -2018,17 +2018,21 @@ function Modal({
   wide?: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-background/70 p-4 backdrop-blur-md">
       <div
-        className={`glass shadow-glow animate-fade-up relative w-full ${wide ? "max-w-2xl" : "max-w-md"} rounded-3xl p-6`}
+        className={`glass shadow-glow animate-fade-up relative flex max-h-[90vh] w-full flex-col ${wide ? "max-w-2xl" : "max-w-md"} rounded-3xl`}
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-6 pt-6 pb-3">
           <h3 className="font-display text-lg font-bold">{title}</h3>
-          <button onClick={onClose} className="rounded-lg p-1 hover:bg-muted">
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-lg p-1 hover:bg-muted"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
-        {children}
+        <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
       </div>
     </div>
   );

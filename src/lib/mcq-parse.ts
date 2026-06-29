@@ -316,7 +316,7 @@ function legacyParseBlock(raw: string): { mcq: ParsedMcq | null; reason?: string
   if (!question) return { mcq: null, reason: "Missing question text" };
 
   const afterD = stripped.slice(mD.index + mD.matchLen);
-  const ansRe = /(?:^|\n)?\s*(?:answer|ans|correct(?:\s+answer)?|correct\s+option)\s*[:.\-)]?\s*(.+?)(?=\n\s*(?:explanation|explain|solution|reason)\s*[:.\-)]|$)/i;
+  const ansRe = /(?:^|\n)[ \t]*(?:answer|ans|correct(?:\s+answer)?|correct\s+option)\s*[:.\-)]?\s*(.+?)(?=\n\s*(?:explanation|explain|solution|reason)\s*[:.\-)]|$)/i;
   const expRe = /(?:^|\n)\s*(?:explanation|explain|solution|reason)\s*[:.\-)]\s*([\s\S]*)$/i;
   const ansMatch = ansRe.exec(afterD);
   const expMatch = expRe.exec(afterD);
