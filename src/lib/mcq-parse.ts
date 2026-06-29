@@ -404,12 +404,17 @@ function parseBlock(raw: string): { mcq: ParsedMcq | null; reason?: string } {
 export function parseMcqText(input: string): ParsedMcqResult {
   const blocks = splitBlocks(input ?? "");
   const cards: ParsedMcq[] = [];
-  const invalidBlocks: { raw: string; reason: string }[] = [];
-  for (const b of blocks) {
+  const invalidBlocks: ParsedMcqInvalidBlock[] = [];
+  blocks.forEach((b, idx) => {
+    const sourceIndex = idx + 1;
     const { mcq, reason } = parseBlock(b);
-    if (mcq) cards.push(mcq);
-    else invalidBlocks.push({ raw: b, reason: reason ?? "Unparseable" });
-  }
+    if (mcq) {
+      mcq.sourceIndex = sourceIndex;
+      cards.push(mcq);
+    } else {
+      invalidBlocks.push({ raw: b, reason: reason ?? "Unparseable", sourceIndex });
+    }
+  });
   return { cards, invalidBlocks };
 }
 
