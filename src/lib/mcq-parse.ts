@@ -23,8 +23,8 @@ export type ParsedMcq = {
   explanation: string;
   /** Optional difficulty parsed from a `Difficulty:` line. Undefined when absent. */
   difficulty?: "easy" | "medium" | "hard";
-  /** 1-based block position in the source text — preserved through filtering. */
-  sourceIndex: number;
+  /** 1-based block position in the source text — assigned by parseMcqText. */
+  sourceIndex?: number;
 };
 
 export type ParsedMcqInvalidBlock = { raw: string; reason: string; sourceIndex: number };
