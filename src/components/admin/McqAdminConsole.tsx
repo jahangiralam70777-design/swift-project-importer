@@ -1747,12 +1747,24 @@ function BulkImportDialog({
     setMsg(null);
     try {
       const items: BulkImportItem[] = validRows.map(
-        ({ source: _s, duplicate: _d, error: _e, ...item }) => item,
+        ({ source: _s, sourceIndex: _si, duplicate: _d, error: _e, ...item }) => item,
       );
       const res = await run({ data: { chapter_id: chapterId, items } });
-      setMsg({ kind: "ok", text: `Inserted ${res.inserted} MCQs` });
-      toast.success(`Imported ${res.inserted} MCQs`);
-      setTimeout(onDone, 600);
+      const failed = rows.filter((r) => r.error || r.duplicate);
+      const failedReport = failed
+        .map(
+          (r) =>
+            `#${r.sourceIndex ?? "?"} — ${r.error ?? (r.duplicate ? "Duplicate question" : "Failed")}`,
+        )
+        .join("\n");
+      const summary =
+        `Total Questions: ${rows.length}\n` +
+        `Imported Successfully: ${res.inserted}\n` +
+        `Failed: ${failed.length}` +
+        (failed.length ? `\n\nFailed Questions:\n${failedReport}` : "");
+      setMsg({ kind: "ok", text: summary });
+      toast.success(`Imported ${res.inserted} MCQs · ${failed.length} skipped`);
+      if (!failed.length) setTimeout(onDone, 600);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Import failed";
       setMsg({ kind: "err", text: message });
