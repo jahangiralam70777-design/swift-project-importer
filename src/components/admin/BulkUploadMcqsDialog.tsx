@@ -484,7 +484,10 @@ export function BulkUploadMcqsDialog({
             <div className="mt-2 space-y-2">
               {errors.slice(0, 10).map((e, i) => (
                 <div key={i} className="rounded bg-background/40 p-2">
-                  <p className="text-rose-300">{e.reason}</p>
+                  <p className="text-rose-300">
+                    <span className="font-semibold">Original Serial #{e.sourceIndex}</span> ·{" "}
+                    {e.reason}
+                  </p>
                   <pre className="mt-1 whitespace-pre-wrap text-[10px] text-muted-foreground">
                     {e.raw.slice(0, 240)}
                   </pre>
