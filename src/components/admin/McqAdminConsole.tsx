@@ -1910,6 +1910,7 @@ function parseMcqText(raw: string, source: string): ParsedImportRow[] {
   return [
     ...parsed.cards.map((row) => ({
       source,
+      sourceIndex: row.sourceIndex,
       question: row.question,
       question_type: row.question_type,
       option_a: row.option_a,
@@ -1918,12 +1919,15 @@ function parseMcqText(raw: string, source: string): ParsedImportRow[] {
       option_d: row.question_type === "true_false" ? null : row.option_d,
       correct_option: row.correct_option,
       explanation: row.explanation || null,
-      difficulty: "medium" as const,
+      // Honor the parser's optional Difficulty. Fall back to the existing
+      // default only when none was supplied — never override an explicit value.
+      difficulty: (row.difficulty ?? "medium") as "easy" | "medium" | "hard",
       status: "published" as const,
       tags: [],
     })),
     ...parsed.invalidBlocks.map((block) => ({
       source,
+      sourceIndex: block.sourceIndex,
       question: block.raw,
       question_type: "mcq" as const,
       option_a: "",
