@@ -792,11 +792,24 @@ export const adminBulkImportMcqs = createServerFn({ method: "POST" })
       rateLimitKey("admin:bulk_upload", "user", context.userId),
       RATE_LIMITS.BULK_UPLOAD,
     );
-    const rows = data.items.map((it) => ({
+    // Continue sort_order from the chapter's current max so multiple bulk
+    // imports stack in chronological order without ever reshuffling earlier
+    // rows. Within this batch, items keep the exact order received from the
+    // parser/dialog (which is the original source order).
+    const { data: maxRow } = await context.supabase
+      .from("mcqs")
+      .select("sort_order")
+      .eq("chapter_id", data.chapter_id)
+      .order("sort_order", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+    const base = Number((maxRow as { sort_order: number | null } | null)?.sort_order ?? 0);
+    const rows = data.items.map((it, i) => ({
       ...it,
       chapter_id: data.chapter_id,
       difficulty: it.difficulty ?? data.defaults?.difficulty ?? "medium",
       status: it.status ?? data.defaults?.status ?? "published",
+      sort_order: base + i + 1,
       created_by: context.userId,
     }));
     const { error, count } = await context.supabase.from("mcqs").insert(rows, { count: "exact" });
