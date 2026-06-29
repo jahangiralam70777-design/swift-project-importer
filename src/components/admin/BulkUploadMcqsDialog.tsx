@@ -103,8 +103,13 @@ export function BulkUploadMcqsDialog({
   const [rawText, setRawText] = useState("");
   const [parsing, setParsing] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
-  const [errors, setErrors] = useState<{ raw: string; reason: string }[]>([]);
+  const [errors, setErrors] = useState<{ raw: string; reason: string; sourceIndex: number }[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [summary, setSummary] = useState<{
+    total: number;
+    success: number;
+    failed: Array<{ sourceIndex: number; reason: string }>;
+  } | null>(null);
 
   const levelsQ = useQuery({
     queryKey: ["admin-levels"],
