@@ -165,6 +165,7 @@ export function BulkUploadMcqsDialog({
     const { cards, invalidBlocks } = parseMcqText(text);
     setRows(cards.map((c) => ({ ...c })));
     setErrors(invalidBlocks);
+    setSummary(null);
     if (cards.length === 0) toast.error("No MCQs detected. Check the format.");
     else toast.success(`Parsed ${cards.length} MCQ${cards.length > 1 ? "s" : ""}`);
   };
