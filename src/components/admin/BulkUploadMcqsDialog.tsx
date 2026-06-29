@@ -513,6 +513,44 @@ export function BulkUploadMcqsDialog({
             </div>
           </div>
         )}
+
+        {summary && (
+          <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs">
+            <div className="mb-2 font-semibold text-emerald-300">Import Summary</div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded bg-background/40 p-2">
+                <div className="text-[10px] uppercase text-muted-foreground">Total Questions</div>
+                <div className="text-base font-bold">{summary.total}</div>
+              </div>
+              <div className="rounded bg-background/40 p-2">
+                <div className="text-[10px] uppercase text-muted-foreground">Imported</div>
+                <div className="text-base font-bold text-emerald-300">{summary.success}</div>
+              </div>
+              <div className="rounded bg-background/40 p-2">
+                <div className="text-[10px] uppercase text-muted-foreground">Failed</div>
+                <div className="text-base font-bold text-rose-300">{summary.failed.length}</div>
+              </div>
+            </div>
+            {summary.failed.length > 0 && (
+              <div className="mt-3">
+                <div className="mb-1 font-semibold text-rose-300">Failed Questions</div>
+                <div className="space-y-1">
+                  {summary.failed.map((f, i) => (
+                    <div
+                      key={`${f.sourceIndex}-${i}`}
+                      className="flex items-start gap-2 rounded bg-background/40 px-2 py-1"
+                    >
+                      <span className="font-mono text-muted-foreground">
+                        #{f.sourceIndex || "?"}
+                      </span>
+                      <span className="text-rose-300">{f.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         </div>
 
         <DialogFooter className="shrink-0 px-6 pb-6 pt-2">
