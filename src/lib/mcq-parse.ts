@@ -23,11 +23,15 @@ export type ParsedMcq = {
   explanation: string;
   /** Optional difficulty parsed from a `Difficulty:` line. Undefined when absent. */
   difficulty?: "easy" | "medium" | "hard";
+  /** 1-based block position in the source text — preserved through filtering. */
+  sourceIndex: number;
 };
+
+export type ParsedMcqInvalidBlock = { raw: string; reason: string; sourceIndex: number };
 
 export type ParsedMcqResult = {
   cards: ParsedMcq[];
-  invalidBlocks: { raw: string; reason: string }[];
+  invalidBlocks: ParsedMcqInvalidBlock[];
 };
 
 const norm = (s: string) => s.replace(/\s+/g, " ").trim();
