@@ -1869,9 +1869,11 @@ function BulkImportDialog({
       )}
 
       {msg && (
-        <p className={`mt-3 text-xs ${msg.kind === "ok" ? "text-emerald-400" : "text-red-400"}`}>
+        <pre
+          className={`mt-3 whitespace-pre-wrap break-words rounded-lg border border-border/40 bg-background/40 p-3 text-xs ${msg.kind === "ok" ? "text-emerald-300" : "text-red-300"}`}
+        >
           {msg.text}
-        </p>
+        </pre>
       )}
       <div className="mt-4 flex justify-end gap-2">
         <button
